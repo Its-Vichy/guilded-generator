@@ -1,6 +1,16 @@
-Hi everyone, i have just patched last gen and make all in golang.
+Hi everyone,
+I come back with this update !
 
-5 E-Mail verified account / s, realistic pfp, bio, online..
-But patched under 24h lmfao, i have only created ~50K accounts...
+Keep in mind that you need to use proxies/vpn while guilded is open because they will ban your ip.
+Also change the mail/pass on https://mail.tm (main.go)
 
-Tool get somes crash due to memory access (my shitty function to clear the map lol)
+You can remove the "//" before the join function to make your accounts join a guild, but guilded will ban your account for spam..
+
+--------
+
+All generated account got e-mail verified, realistic PFP, Username, Bio, Online / dnd / Idle status.
+Accounts are saved in email:pass:cookie:id format in data/tokens.txt.
+
+Preview: https://cdn.discordapp.com/attachments/979740086927261697/989431397481607168/unknown.png
+
+<3

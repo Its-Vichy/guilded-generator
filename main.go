@@ -3,29 +3,30 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"os"
+	//"os"
 	"os/exec"
-	"os/signal"
+	//"os/signal"
 	"strings"
-	"syscall"
+	//"syscall"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/felixstrobel/mailtm"
 	"github.com/its-vichy/guildedGen/package/guilded"
 	"github.com/its-vichy/guildedGen/package/utils"
+	"github.com/zenthangplus/goccm"
 )
 
 var (
-	ThreadNumber = 5 // okey, only 5 thread but this gen was OP AS FUCK, you can do 5/s with only 5threads so don't worry :p
+	ThreadNumber = 50 // okey, only 5 thread but this gen was OP AS FUCK (with good proxies), you can do 5/s with only 5threads so don't worry :p
 
-	MailAddr     = "the name here"
-	MailPassword = "you care.."
+	MailAddr     = "lmfaonotamailtemp"
+	MailPassword = "lollol"
 	MailDomain   = "@knowledgemd.com"
 
-	MailBox      = map[string]string{}
+	MailBox = map[string]string{}
 
-	InviteCode = "EoeQbWPk"
+	InviteCode = "ElQv91P2"
 )
 
 // couters
@@ -67,13 +68,13 @@ func FetchMailBox() {
 			}
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
 func UpdateTitle() {
 	for {
-		exec.Command("cmd", "/C", "title", fmt.Sprintf("GuildeadGenerator - Generated: %d Verified: %d", Generated, Verified)).Run()
+		exec.Command("cmd", "/C", "title", fmt.Sprintf("GuildeadGenerator - Generated: %d Verified: %d - Proxies: %d", Generated, Verified, len(utils.Proxies))).Run()
 		time.Sleep(500 * time.Millisecond)
 	}
 }
@@ -82,74 +83,84 @@ func main() {
 	go FetchMailBox()
 	go UpdateTitle()
 
-	for i := 1; i <= ThreadNumber; i++ {
+	c := goccm.New(ThreadNumber)
+
+	for {
+		c.Wait()
+
 		go func() {
-			for {
-				Session := guilded.CreateSession(utils.GetNexProxie())
+			Proxy := utils.GetNexProxie()
+			Session := guilded.CreateSession(Proxy)
 
-				Email := MailAddr + "+" + utils.RandHexString(5) + MailDomain
-				Pass := utils.RandHexString(5)
-				Username := utils.GetNexUsername()
+			Email := MailAddr + "+" + utils.RandHexString(5) + MailDomain
+			Pass := utils.RandHexString(5)
+			Username := utils.GetNexUsername()
 
-				Session.CreateAccount(Email, Pass, Username)
-				Me := Session.Login(Email, Pass)
+			r := Session.CreateAccount(Email, Pass, Username)
 
-				color.Yellow("%d | Email: %s Pass: %s | Name: %s ID: %s | #%d\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID, Generated)
-				Generated++
+			if r.User.Email == "" {
+				utils.Proxies = utils.RemoveIProxy(Proxy, utils.Proxies)
+				c.Done()
+				return
+			}
 
-				if Session.SpoofEvent() {
-					go func() {
-						Session.SentVerificationMail()
-						IsVerified := false
+			Me := Session.Login(Email, Pass)
 
-						for IsVerified == false {
-							for key, value := range MailBox {
-								if key == Email {
-									if Session.VerifyEmail(value) {
-										color.Green("%d | Email: %s Pass: %s | Name: %s ID: %s | #%d\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID, Verified)
-										utils.AppendLine("tokens.txt", fmt.Sprintf("%s:%s:%s:%s", Email, Pass, Session.HttpCookies["hmac_signed_session"], Me.User.ID))
-										
-										delete(MailBox, key)
-										
-										IsVerified = true
-										Verified++
-										
-										if Session.SetAvatar(utils.GetNexPfP()) {
-											go color.Magenta("%d | Email: %s Pass: %s | Name: %s ID: %s | Avatar set\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID)
-										}
+			if Me.User.Email == "" {
+				c.Done()
+				return
+			}
 
-										/*if Session.SetBio(utils.GetNexBio()) {
-											color.HiMagenta("Email: %s Pass: %s | Name: %s ID: %s | Bio set\n", Me.User.Email, Pass, Me.User.Name, Me.User.ID)
-										}*/
+			color.Yellow("%d | %s:%s\n", Verified, Me.User.Email, Pass)
+			Generated++
 
-										if Session.SetActivity(1 + rand.Intn(3-1)) {
-											go color.Blue("%d | Email: %s Pass: %s | Name: %s ID: %s | Set activity\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID)
-										}
+			if Session.SpoofEvent() {
+				Session.SentVerificationMail()
+				IsVerified := false
 
-										if Session.SetPlay(utils.GetNexStatus(), 90002200 + rand.Intn(90002539-90002200)) {
-											go color.HiBlue("%d | Email: %s Pass: %s | Name: %s ID: %s | Set game\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID)
-										}
+				for IsVerified == false {
+					for key, value := range MailBox {
+						if key == Email {
+							if Session.VerifyEmail(value) {
+								utils.AppendLine("./data/tokens.txt", fmt.Sprintf("%s:%s:%s:%s", Email, Pass, Session.HttpCookies["hmac_signed_session"], Me.User.ID))
 
-										if Session.Ping() {
-											go color.HiBlue("%d | Email: %s Pass: %s | Name: %s ID: %s | Ping sent\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID)
-										}
+								delete(MailBox, key)
+								IsVerified = true
+								Verified++
 
-										if Session.JoinGuild(InviteCode) {
-											go color.Cyan("%d | Email: %s Pass: %s | Name: %s ID: %s | Joined server\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID)
-										}
-									}
-								}
+								/*if Session.SetBio(utils.GetNexBio()) {
+									color.HiMagenta("Email: %s Pass: %s | Name: %s ID: %s | Bio set\n", Me.User.Email, Pass, Me.User.Name, Me.User.ID)
+								}*/
+
+								Session.SetAvatar(utils.GetNexPfP())
+								Session.SetActivity(1 + rand.Intn(3-1))
+								Session.SetPlay(utils.GetNexStatus(), 90002200+rand.Intn(90002539-90002200))
+								Session.Ping()
+
+								//Session.JoinGuild(InviteCode)
+
+								color.Green("%d | %s:%s\n", Verified, Me.User.Email, Pass)
+
+								/*if Session.JoinGuild(InviteCode) {
+									go color.Cyan("%d | Email: %s Pass: %s | Name: %s ID: %s | Joined server\n", Verified, Me.User.Email, Pass, Me.User.Name, Me.User.ID)
+								}*/
+							} else {
+								IsVerified = true
 							}
-
-							time.Sleep(1 * time.Second)
 						}
-					}()
+					}
+
+					time.Sleep(500 * time.Millisecond)
 				}
 			}
+
+			c.Done()
 		}()
 	}
 
+	/*c.WaitAllDone()
+
 	Sc := make(chan os.Signal, 1)
 	signal.Notify(Sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-Sc
+	<-Sc*/
 }

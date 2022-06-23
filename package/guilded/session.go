@@ -71,8 +71,8 @@ func (Session GuildedSession) PostRequest(url string, payload []byte, method str
 		fasthttp.ReleaseRequest(request)
 
 		if err != nil {
-			fmt.Println(err)
-			return nil
+			//fmt.Printf("error: %s\n", err)
+			break
 		}
 
 		cj.ReadResponse(response)
@@ -89,6 +89,8 @@ func (Session GuildedSession) PostRequest(url string, payload []byte, method str
 
 		return response
 	}
+
+	return &fasthttp.Response{}
 }
 
 func (Session GuildedSession) CreateAccount(Email string, Password string, Name string) *RegisterResponse {
