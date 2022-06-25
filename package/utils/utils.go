@@ -14,12 +14,25 @@ var (
 	pfp_index       int
 	status_index    int
 
-	proxies, _   = ReadLines("proxies.txt")
+	Proxies, _   = ReadLines("data/proxies.txt")
 	usernames, _ = ReadLines("data/usernames.txt")
 	bio, _       = ReadLines("data/bio.txt")
 	pfp, _       = ReadLines("data/pfp.txt")
 	status, _    = ReadLines("data/status.txt")
+	Emails, _    = ReadLines("data/emails.txt")
 )
+
+func RemoveIProxy(proxy string, lst []string) []string {
+	new := []string{}
+
+	for _, item := range lst {
+		if item != proxy {
+			new = append(new, item)
+		}
+	}
+
+	return new
+}
 
 func ReadLines(path string) ([]string, error) {
 	file, err := os.Open(path)
@@ -57,7 +70,7 @@ func AppendLine(path string, line string) {
 
 func GetNexBio() string {
 	bio_index++
-	if bio_index == len(bio) {
+	if bio_index == len(bio) || bio_index > len(bio) {
 		bio_index = 0
 	}
 	return bio[bio_index]
@@ -65,15 +78,15 @@ func GetNexBio() string {
 
 func GetNexPfP() string {
 	pfp_index++
-	if pfp_index == len(pfp) {
+	if pfp_index == len(pfp) || pfp_index > len(pfp) {
 		pfp_index = 0
 	}
-	return pfp[usernames_index]
+	return pfp[pfp_index]
 }
 
 func GetNexStatus() string {
 	status_index++
-	if status_index == len(status) {
+	if status_index == len(status) || status_index > len(status) {
 		status_index = 0
 	}
 	return status[status_index]
@@ -81,15 +94,22 @@ func GetNexStatus() string {
 
 func GetNexProxie() string {
 	proxy_index++
-	if proxy_index == len(proxies) {
+
+	// Giga chad proxies reloading
+	if len(Proxies) <= 5 {
+		Proxies, _ = ReadLines("data/proxies.txt")
+	}
+	
+	if proxy_index == len(Proxies) || proxy_index > len(Proxies) {
 		proxy_index = 0
 	}
-	return proxies[proxy_index]
+
+	return Proxies[proxy_index]
 }
 
 func GetNexUsername() string {
 	usernames_index++
-	if usernames_index == len(usernames) {
+	if usernames_index == len(usernames) || usernames_index > len(usernames) {
 		usernames_index = 0
 	}
 	return usernames[usernames_index]

@@ -1,5 +1,3 @@
-github.com/MohanadHosny/go-gpalu v0.0.0-20210928051900-6d7834d18f74 h1:l7TPOIKTcI/EomgHSkxa23V2g5ioAsOKm0GKzNOWgno=
-github.com/MohanadHosny/go-gpalu v0.0.0-20210928051900-6d7834d18f74/go.mod h1:+9dPHl8Y1lV/aJziOsU2ytP039JXj0SklgwWpzjaEWU=
 github.com/andybalholm/brotli v1.0.4 h1:V7DdXeJtZscaqfNuAdSRuRFzuiKlHSC/Zh3zl9qY3JY=
 github.com/andybalholm/brotli v1.0.4/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
 github.com/dgrr/cookiejar v0.0.0-20181027163754-344320c9f75e h1:JSGlkUw6ZcuSYeQpfbfhC2nFP0B/7728JAdu6AnwFHs=
