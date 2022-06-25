@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/admin100/util/console"
 	"github.com/fatih/color"
 	"github.com/felixstrobel/mailtm"
 	"github.com/its-vichy/guildedGen/package/guilded"
@@ -21,8 +22,8 @@ import (
 )
 
 var (
-	MailBox    = map[string]string{}
-	Config     = utils.LoadConfig()
+	MailBox = map[string]string{}
+	Config  = utils.LoadConfig()
 )
 
 // couters
@@ -83,13 +84,14 @@ func FetchMailBox(username string, password string) {
 
 func UpdateTitle() {
 	for {
-		exec.Command("cmd", "/C", "title", fmt.Sprintf("GuildeadGenerator - Generated: %d Verified: %d - Proxies: %d - MailErrors: %d", Generated, Verified, len(utils.Proxies), MailErrors)).Run()
+		console.SetConsoleTitle(fmt.Sprintf("GuildeadGenerator - Generated: %d Verified: %d - Proxies: %d - MailErrors: %d", Generated, Verified, len(utils.Proxies), MailErrors))
 		time.Sleep(500 * time.Millisecond)
 	}
 }
 
 func main() {
 	go UpdateTitle()
+	var mutex = &sync.Mutex{}
 
 	for _, mail := range utils.Emails {
 		go func(mail string) {
@@ -131,24 +133,26 @@ func main() {
 						Session.SentVerificationMail()
 						IsVerified := false
 
-						for IsVerified == false {
+						for !IsVerified {
 							for key, value := range MailBox {
 								if key == Email {
 									if Session.VerifyEmail(value) {
 										utils.AppendLine("./data/tokens.txt", fmt.Sprintf("%s:%s:%s:%s", Email, Pass, Session.HttpCookies["hmac_signed_session"], Me.User.ID))
 
+										mutex.Lock()
 										delete(MailBox, key)
+										mutex.Unlock()
 										IsVerified = true
 										Verified++
+
+										if Config.Invite != "" {
+											go Session.JoinGuild(Config.Invite)
+										}
 
 										Session.SetAvatar(utils.GetNexPfP())
 										Session.SetActivity(1 + rand.Intn(3-1))
 										Session.SetPlay(utils.GetNexStatus(), 90002200+rand.Intn(90002539-90002200))
 										Session.Ping()
-										
-										if Config.Invite != "" {
-											go Session.JoinGuild(Config.Invite)
-										}
 
 										color.Green("%d | %s:%s\n", Verified, Me.User.Email, Pass)
 									} else {
@@ -156,7 +160,6 @@ func main() {
 									}
 								}
 							}
-
 							time.Sleep(500 * time.Millisecond)
 						}
 					}
