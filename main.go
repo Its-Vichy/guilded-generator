@@ -146,7 +146,7 @@ func main() {
 										Session.SetPlay(utils.GetNexStatus(), 90002200+rand.Intn(90002539-90002200))
 										Session.Ping()
 										
-										if Config.Invite == "" {
+										if Config.Invite != "" {
 											go Session.JoinGuild(Config.Invite)
 										}
 
