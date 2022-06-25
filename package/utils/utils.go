@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+	"io/ioutil"
 	"os"
 )
 
@@ -21,6 +23,23 @@ var (
 	status, _    = ReadLines("data/status.txt")
 	Emails, _    = ReadLines("data/emails.txt")
 )
+
+func LoadConfig() *Config {
+	jsonFile, err := os.Open("config.json")
+
+	if err != nil {
+		panic(err)
+	}
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var cfg Config
+	
+	json.Unmarshal(byteValue, &cfg)
+	defer jsonFile.Close()
+
+	return &cfg
+}
 
 func RemoveIProxy(proxy string, lst []string) []string {
 	new := []string{}
@@ -99,7 +118,7 @@ func GetNexProxie() string {
 	if len(Proxies) <= 5 {
 		Proxies, _ = ReadLines("data/proxies.txt")
 	}
-	
+
 	if proxy_index == len(Proxies) || proxy_index > len(Proxies) {
 		proxy_index = 0
 	}

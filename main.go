@@ -21,68 +21,63 @@ import (
 )
 
 var (
-	ThreadNumber = 50 // okey, only 5 thread but this gen was OP AS FUCK (with good proxies), you can do 5/s with only 5threads so don't worry :p
-
-	MailAddr     = "gerdgrezgergredsfs"
-	MailPassword = "gerdgrezgergredsfs"
-	MailDomain   = "@knowledgemd.com"
-
-	MailBox = map[string]string{}
-
-	InviteCode = "pYr9V8YE"
+	MailBox    = map[string]string{}
+	Config     = utils.LoadConfig()
 )
 
 // couters
 var (
-	Generated int
-	Verified  int
+	Generated  int
+	Verified   int
 	MailErrors int
 )
 
 func FetchMailBox(username string, password string) {
-	Client, _ := mailtm.NewMailClient()
-	
-	url_i := url.URL{}
-	url_proxy, _ := url_i.Parse(fmt.Sprintf("http://%s", utils.GetNexProxie()))
-
-	transport := http.Transport{}
-	transport.Proxy = http.ProxyURL(url_proxy)
-	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	http_client := http.Client{Transport: &transport}
-
-	Client.HttpClient = &http_client
-	Client.GetAuthTokenCredentials(username, password)
-
 	for {
-		Messages, err := Client.GetMessages(1)
+		Client, _ := mailtm.NewMailClient()
 
-		if err != nil {
-			//fmt.Println("get mess: " + string(err.Error()))
-			MailErrors++
-			continue
-		}
+		url_i := url.URL{}
+		url_proxy, _ := url_i.Parse(fmt.Sprintf("http://%s", utils.GetNexProxie()))
 
-		for _, Message := range Messages {
-			Mess, err := Client.GetMessageByID(Message.ID)
+		transport := http.Transport{}
+		transport.Proxy = http.ProxyURL(url_proxy)
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		http_client := http.Client{Transport: &transport}
+
+		Client.HttpClient = &http_client
+		Client.GetAuthTokenCredentials(username, password)
+
+		for {
+			Messages, err := Client.GetMessages(1)
 
 			if err != nil {
-				continue
+				//fmt.Println("get mess: " + string(err.Error()))
+				MailErrors++
+				break
 			}
 
-			if strings.Contains(Mess.Subject, "Welcome to Guilded") {
-				go Client.DeleteMessageByID(Message.ID)
-				continue
+			for _, Message := range Messages {
+				Mess, err := Client.GetMessageByID(Message.ID)
+
+				if err != nil {
+					continue
+				}
+
+				if strings.Contains(Mess.Subject, "Welcome to Guilded") {
+					go Client.DeleteMessageByID(Message.ID)
+					continue
+				}
+
+				if Mess.Subject == "Verify your email on Guilded" {
+					VerificationToken := strings.Split(strings.Split(Mess.Html[0], "https://www.guilded.gg/api/email/verify?token=")[1], `"`)[0]
+					go Client.DeleteMessageByID(Message.ID)
+
+					MailBox[Mess.To[0].Address] = VerificationToken
+				}
 			}
 
-			if Mess.Subject == "Verify your email on Guilded" {
-				VerificationToken := strings.Split(strings.Split(Mess.Html[0], "https://www.guilded.gg/api/email/verify?token=")[1], `"`)[0]
-				go Client.DeleteMessageByID(Message.ID)
-
-				MailBox[Mess.To[0].Address] = VerificationToken
-			}
+			time.Sleep(500 * time.Millisecond)
 		}
-
-		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -94,14 +89,14 @@ func UpdateTitle() {
 }
 
 func main() {
+	go UpdateTitle()
+
 	for _, mail := range utils.Emails {
 		go func(mail string) {
-			splitted := strings.Split(mail, ":")
+			parsed_mail := strings.Split(mail, ":")
 
-			go FetchMailBox(splitted[0], splitted[1])
-			go UpdateTitle()
-
-			c := goccm.New(ThreadNumber)
+			go FetchMailBox(parsed_mail[0], parsed_mail[1])
+			c := goccm.New(Config.Threads)
 
 			for {
 				c.Wait()
@@ -110,13 +105,11 @@ func main() {
 					Proxy := utils.GetNexProxie()
 					Session := guilded.CreateSession(Proxy)
 
-					splt := strings.Split(splitted[0], "@")
-
-					Email := splt[0] + "+" + utils.RandHexString(5) + "@" + splt[1]
+					parsed := strings.Split(parsed_mail[0], "@")
+					Email := fmt.Sprintf("%s+%s@%s", parsed[0], utils.RandHexString(5), parsed[1])
 					Pass := utils.RandHexString(5)
-					Username := utils.GetNexUsername()
 
-					r := Session.CreateAccount(Email, Pass, Username)
+					r := Session.CreateAccount(Email, Pass, utils.GetNexUsername())
 
 					if r.User.Email == "" {
 						utils.Proxies = utils.RemoveIProxy(Proxy, utils.Proxies)
@@ -152,9 +145,10 @@ func main() {
 										Session.SetActivity(1 + rand.Intn(3-1))
 										Session.SetPlay(utils.GetNexStatus(), 90002200+rand.Intn(90002539-90002200))
 										Session.Ping()
-
-										go Session.JoinGuild(InviteCode)
-										//go Session.JoinTeam(InviteCode)
+										
+										if Config.Invite == "" {
+											go Session.JoinGuild(Config.Invite)
+										}
 
 										color.Green("%d | %s:%s\n", Verified, Me.User.Email, Pass)
 									} else {
